@@ -10,9 +10,7 @@ import {
   ScrollView,
   StatusBar
 } from 'react-native';
-import { auth } from '../utils/firebase';
-// ❗️ 1. Import ฟังก์ชันสำหรับส่งอีเมลจาก Firebase
-import { sendPasswordResetEmail } from 'firebase/auth'; 
+
 
 const ForgotPasswordScreen = ({ navigation }) => {
   const [email, setEmail] = useState('');

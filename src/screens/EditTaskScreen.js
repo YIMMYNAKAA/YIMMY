@@ -1,8 +1,6 @@
 import React, { useState } from 'react';
 import { StyleSheet, View, Alert } from 'react-native';
 import TaskForm from '../components/TaskForm';
-import { db } from '../utils/firebase'; // ✅ นำเข้า Firestore
-import { doc, updateDoc } from 'firebase/firestore';
 
 const EditTaskScreen = ({ route, navigation }) => {
   const { task } = route.params; // ✅ รับข้อมูล Task ที่จะทำการแก้ไข

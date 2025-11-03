@@ -1,8 +1,6 @@
 import React, { useState } from "react";
 import { StyleSheet, View, Text, TouchableOpacity, Animated, Alert } from "react-native";
 import { useNavigation } from "@react-navigation/native";
-import { db } from "../utils/firebase";
-import { doc, updateDoc } from "firebase/firestore";
 
 const TaskItem = ({ task, onDelete, onStatusChange }) => {
   const navigation = useNavigation();

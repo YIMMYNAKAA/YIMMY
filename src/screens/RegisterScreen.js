@@ -10,17 +10,19 @@ import {
   ScrollView,
   StatusBar
 } from 'react-native';
-import { auth } from '../utils/firebase';
-import { createUserWithEmailAndPassword, updateProfile } from 'firebase/auth';
+
+
 
 const RegisterScreen = ({ navigation }) => {
-  const [name, setName] = useState(''); // 🔹 เพิ่ม State สำหรับ 'Name'
+  const [name, setName] = useState('');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
-  const [confirmPassword, setConfirmPassword] = useState(''); // 🔹 คง State นี้ไว้
+  const [confirmPassword, setConfirmPassword] = useState('');
 
+  // ⬇️ ⬇️ ⬇️  ฟังก์ชันที่แก้ไขแล้ว ⬇️ ⬇️ ⬇️
   const handleRegister = async () => {
-    // 🔹 เพิ่ม 'name' ในการตรวจสอบ
+    
+    // 1. การตรวจสอบข้อมูลฝั่ง App (เหมือนเดิม)
     if (!name || !email || !password || !confirmPassword) {
       Alert.alert('แจ้งเตือน', 'กรุณากรอกข้อมูลให้ครบถ้วน');
       return;
@@ -31,28 +33,48 @@ const RegisterScreen = ({ navigation }) => {
       return;
     }
 
-    // 🔹 ตรวจสอบความยาวรหัสผ่าน (ตาม Placeholder)
     if (password.length < 8) {
       Alert.alert('แจ้งเตือน', 'รหัสผ่านต้องมีอย่างน้อย 8 ตัวอักษร');
       return;
     }
 
+    // ⚠️⚠️⚠️ นี่คือบรรทัดที่แก้ไขแล้ว ⚠️⚠️⚠️
+    // เปลี่ยนจาก 'localhost' เป็น IP ของเซิร์ฟเวอร์คุณ
+    const API_URL = 'http://192.168.1.38/login/register.php';
+
+    // 3. สร้างข้อมูลที่จะส่ง (เพื่อให้ PHP อ่าน $_POST ได้)
+    const formData = new FormData();
+    formData.append('name', name);
+    formData.append('email', email);
+    formData.append('password', password);
+
     try {
-      // 1. สร้างผู้ใช้
-      const userCredential = await createUserWithEmailAndPassword(auth, email, password);
-      
-      // 2. (ทางเลือก) อัปเดตโปรไฟล์ Firebase Auth ด้วย 'name'
-      await updateProfile(userCredential.user, {
-        displayName: name
+      // 4. ส่ง Request แบบ POST ไปยังเซิร์ฟเวอร์ PHP
+      const response = await fetch(API_URL, {
+        method: 'POST',
+        body: formData,
       });
-      
-      Alert.alert('สำเร็จ', 'สมัครสมาชิกเรียบร้อยแล้ว');
-      navigation.replace('Login'); // 🔹 ไปที่หน้า Login
+
+      // 5. รับคำตอบกลับมา (ที่ PHP echo ออกมา)
+      const responseText = await response.text();
+
+      // 6. ตรวจสอบคำตอบจาก PHP
+      if (responseText.includes('success')) {
+        Alert.alert('สำเร็จ', 'สมัครสมาชิกเรียบร้อยแล้ว');
+        navigation.replace('Login'); // ไปหน้า Login
+      } else {
+        // แสดง "failure" หรือข้อความ error อื่นๆ ที่ PHP echo
+        Alert.alert('สมัครสมาชิกล้มเหลว', 'ข้อมูลไม่ถูกต้อง หรือ ' + responseText);
+      }
+
     } catch (error) {
-      Alert.alert('สมัครสมาชิกล้มเหลว', error.message);
+      // ถ้าเกิดข้อผิดพลาดตอนเชื่อมต่อ (เช่น เน็ตหลุด, เซิร์ฟเวอร์ปิด, IP ผิด)
+      Alert.alert('เกิดข้อผิดพลาด', 'ไม่สามารถเชื่อมต่อเซิร์ฟเวอร์ได้: ' + error.message);
     }
   };
+  // ⬆️ ⬆️ ⬆️ สิ้นสุดการแก้ไขฟังก์ชัน ⬆️ ⬆️ ⬆️
 
+  // (ส่วน UI ด้านล่างนี้เหมือนเดิมทุกอย่างครับ)
   return (
     <SafeAreaView style={styles.safeArea}>
       <StatusBar barStyle="dark-content" />
@@ -61,20 +83,16 @@ const RegisterScreen = ({ navigation }) => {
         contentContainerStyle={styles.contentContainer}
         keyboardShouldPersistTaps="handled"
       >
-        {/* === ปุ่มย้อนกลับ === */}
         <TouchableOpacity 
           style={styles.backButton} 
           onPress={() => navigation.goBack()}
         >
-          {/* คุณสามารถใช้ Icon แทนได้ แต่ Text ก็ง่ายดีครับ */}
           <Text style={styles.backButtonText}>←</Text> 
         </TouchableOpacity>
 
-        {/* === หัวข้อ === */}
         <Text style={styles.subtitle}>WELCOME!</Text>
         <Text style={styles.title}>Sign up</Text>
 
-        {/* --- Name --- */}
         <Text style={styles.label}>Name</Text>
         <TextInput
           style={styles.input}
@@ -85,7 +103,6 @@ const RegisterScreen = ({ navigation }) => {
           onChangeText={setName}
         />
 
-        {/* --- Email --- */}
         <Text style={styles.label}>Email</Text>
         <TextInput
           style={styles.input}
@@ -97,7 +114,6 @@ const RegisterScreen = ({ navigation }) => {
           onChangeText={setEmail}
         />
 
-        {/* --- Password --- */}
         <Text style={styles.label}>Password</Text>
         <TextInput
           style={styles.input}
@@ -108,7 +124,6 @@ const RegisterScreen = ({ navigation }) => {
           onChangeText={setPassword}
         />
 
-        {/* --- Confirm Password (จากโค้ดเดิม) --- */}
         <Text style={styles.label}>Confirm Password</Text>
         <TextInput
           style={styles.input}
@@ -119,12 +134,10 @@ const RegisterScreen = ({ navigation }) => {
           onChangeText={setConfirmPassword}
         />
 
-        {/* --- ปุ่มสมัครสมาชิก --- */}
         <TouchableOpacity style={styles.button} onPress={handleRegister}>
           <Text style={styles.buttonText}>Create account</Text>
         </TouchableOpacity>
 
-        {/* --- ลิงก์ไปหน้า Login --- */}
         <View style={styles.bottomLinkContainer}>
           <Text style={styles.bottomLinkText}>Already have an account? </Text>
           <TouchableOpacity onPress={() => navigation.navigate('Login')}>
@@ -137,7 +150,7 @@ const RegisterScreen = ({ navigation }) => {
   );
 };
 
-// 🎨 Stylesheet ที่อัปเดตใหม่ทั้งหมด
+// (Stylesheet... เหมือนเดิม)
 const styles = StyleSheet.create({
   safeArea: {
     flex: 1,
@@ -150,7 +163,7 @@ const styles = StyleSheet.create({
     flexGrow: 1,
     paddingHorizontal: 24,
     paddingBottom: 30,
-    paddingTop: 20, // เพิ่มระยะห่างด้านบน
+    paddingTop: 20, 
   },
   backButton: {
     width: 40,
@@ -170,31 +183,31 @@ const styles = StyleSheet.create({
   title: {
     fontSize: 32,
     fontWeight: 'bold',
-    color: '#2E1F6E', // สีม่วงเข้ม
+    color: '#2E1F6E', 
     marginBottom: 24,
   },
   label: {
     fontSize: 13,
-    color: '#6B6B6B', // สีเทา
+    color: '#6B6B6B', 
     marginBottom: 6,
-    marginTop: 10, // เพิ่มระยะห่างระหว่างช่อง
+    marginTop: 10, 
   },
   input: {
     width: '100%',
     height: 50,
     borderWidth: 1,
-    borderColor: '#E0E0E0', // สีขอบเทาอ่อน
+    borderColor: '#E0E0E0', 
     borderRadius: 8,
     paddingHorizontal: 16,
     fontSize: 16,
     color: '#333',
   },
   button: {
-    backgroundColor: '#635BFF', // สีม่วงสด
+    backgroundColor: '#635BFF', 
     paddingVertical: 14,
     borderRadius: 8,
     alignItems: 'center',
-    marginTop: 24, // เพิ่มระยะห่างด้านบนปุ่ม
+    marginTop: 24, 
   },
   buttonText: {
     color: '#fff',
@@ -211,7 +224,7 @@ const styles = StyleSheet.create({
     fontSize: 13,
   },
   bottomLink: {
-    color: '#635BFF', // สีม่วงสด
+    color: '#635BFF', 
     fontSize: 13,
     fontWeight: 'bold',
     marginLeft: 4,

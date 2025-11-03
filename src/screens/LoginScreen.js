@@ -11,16 +11,8 @@ import {
   StatusBar,
   SafeAreaView
 } from 'react-native';
-import { auth } from '../utils/firebase'; // 🔹 นำเข้า Firebase Auth
-import { signInWithEmailAndPassword } from 'firebase/auth';
 
-// --- หมายเหตุ ---
-// 1. คุณต้องมีรูปภาพส่วนหัว (แพนเค้ก) ในโปรเจกต์ของคุณ
-// 2. ผมจะใช้ชื่อ '.../assets/login-header.jpg' เป็นตัวอย่าง
-// 3. อย่าลืมเปลี่ยน path '.../assets/login-header.jpg' ให้ตรงกับไฟล์รูปของคุณ
-//
-// const headerImage = require('../assets/login-header.jpg');
-// ----------------
+// (Firebase ถูกลบออกแล้ว)
 
 const LoginScreen = ({ navigation }) => {
   const [email, setEmail] = useState('');
@@ -33,14 +25,40 @@ const LoginScreen = ({ navigation }) => {
     }
 
     try {
-      await signInWithEmailAndPassword(auth, email, password);
-      Alert.alert('สำเร็จ', 'เข้าสู่ระบบเรียบร้อยแล้ว');
-      navigation.replace('Home');
+      const formData = new FormData();
+      formData.append('email', email);
+      formData.append('password', password);
+
+      // ❗️ 1. แก้ไข URL ให้มี path 'login' (เหมือน register.php)
+      const API_URL = 'http://192.168.1.38/login/login.php';
+      
+      const response = await fetch(API_URL, { 
+        method: 'POST',
+        body: formData,
+      });
+
+      // ❗️ 2. เปลี่ยนจาก .text() เป็น .json()
+      const data = await response.json(); 
+
+      // ❗️ 3. ตรวจสอบ data.status (จาก JSON)
+      if (data.status === 'success') { 
+        // ❗️ 4. ทักทายชื่อผู้ใช้ที่ดึงมาจากฐานข้อมูล (จาก JSON)
+        Alert.alert('สำเร็จ', 'ยินดีต้อนรับ, ' + data.user.name);
+        
+        // ส่งข้อมูลผู้ใช้ไปหน้า Home (เผื่อต้องใช้)
+        navigation.replace('Home', { user: data.user });
+
+      } else {
+        // ❗️ 5. แสดง message จาก server (จาก JSON)
+        Alert.alert('เข้าสู่ระบบล้มเหลว', data.message || 'อีเมลหรือรหัสผ่านไม่ถูกต้อง');
+      }
     } catch (error) {
-      Alert.alert('เข้าสู่ระบบล้มเหลว', error.message);
+      console.error(error);
+      Alert.alert('เกิดข้อผิดพลาด', 'ไม่สามารถเชื่อมต่อกับเซิร์ฟเวอร์ได้ หรือ Server ไม่ได้ส่ง JSON กลับมา');
     }
   };
-
+  
+  // --- ส่วน UI (ใช้ของเดิม) ---
   return (
     <SafeAreaView style={styles.safeArea}>
       <StatusBar barStyle="light-content" />
@@ -49,17 +67,14 @@ const LoginScreen = ({ navigation }) => {
         contentContainerStyle={{ flexGrow: 1 }}
         keyboardShouldPersistTaps="handled"
       >
-        {/* === ส่วนหัว (รูปภาพ) === */}
         <View style={styles.headerContainer}>
           <Image
-            // ✅ แก้ไขโดยใช้ URL
-            source={{ uri: 'https://st-th-1.byteark.com/assets.punpro.com/contents/i8771/93606335_3248005805235750_5486790569969582080_o.jpg' }} // <-- ใส่ URL ของคุณตรงนี้
+            source={{ uri: 'https://st-th-1.byteark.com/assets.punpro.com/contents/i8771/93606335_3248005805235750_5486790569969582080_o.jpg' }}
             style={styles.headerImage}
             resizeMode="cover"
           />
         </View>
 
-        {/* === ส่วนฟอร์ม (พื้นที่สีขาว) === */}
         <View style={styles.formContainer}>
           <Text style={styles.title}>Hello again!</Text>
 
@@ -81,7 +96,7 @@ const LoginScreen = ({ navigation }) => {
             style={styles.input}
             placeholder="Enter your password"
             placeholderTextColor="#AAA"
-            secureTextEntry // ทำให้เป็น text รหัสผ่าน
+            secureTextEntry
             value={password}
             onChangeText={setPassword}
           />
@@ -91,7 +106,7 @@ const LoginScreen = ({ navigation }) => {
             <Text style={styles.loginButtonText}>Login</Text>
           </TouchableOpacity>
 
-          {/* --- ลืมรหัสผ่าน (✅ แก้ไขแล้ว) --- */}
+          {/* --- ลืมรหัสผ่าน --- */}
           <TouchableOpacity onPress={() => navigation.navigate('ForgotPassword')}>
             <Text style={styles.forgotText}>Forgot your password?</Text>
           </TouchableOpacity>
@@ -103,65 +118,62 @@ const LoginScreen = ({ navigation }) => {
               <Text style={styles.signupLink}>Sign up</Text>
             </TouchableOpacity>
           </View>
-
         </View>
       </ScrollView>
     </SafeAreaView>
   );
 };
 
+// ... (ส่วน Stylesheet ใช้ของเดิม) ...
 const styles = StyleSheet.create({
   safeArea: {
     flex: 1,
-    backgroundColor: '#fff', // สีพื้นหลังของส่วนฟอร์ม
+    backgroundColor: '#fff', 
   },
   container: {
     flex: 1,
   },
-  // --- ส่วนหัว ---
   headerContainer: {
     width: '100%',
-    height: 260, // กำหนดความสูงของรูป
+    height: 260, 
   },
   headerImage: {
     width: '100%',
     height: '100%',
   },
-  // --- ส่วนฟอร์ม ---
   formContainer: {
     flex: 1,
     backgroundColor: '#fff',
-    borderTopLeftRadius: 30,  // ทำให้ขอบบนซ้ายโค้ง
-    borderTopRightRadius: 30, // ทำให้ขอบบนขวาโค้ง
-    marginTop: -30,           // ดึงฟอร์มขึ้นไปทับรูปภาพ 30px
+    borderTopLeftRadius: 30, 
+    borderTopRightRadius: 30,
+    marginTop: -30, 
     paddingHorizontal: 24,
     paddingTop: 24,
   },
   title: {
     fontSize: 28,
     fontWeight: 'bold',
-    color: '#2E1F6E', // สีม่วงเข้ม
+    color: '#2E1F6E',
     marginBottom: 24,
   },
   label: {
     fontSize: 13,
-    color: '#6B6B6B', // สีเทา
+    color: '#6B6B6B', 
     marginBottom: 6,
   },
   input: {
     width: '100%',
     height: 50,
     borderWidth: 1,
-    borderColor: '#E0E0E0', // สีขอบเทาอ่อน
+    borderColor: '#E0E0E0', 
     borderRadius: 8,
     paddingHorizontal: 16,
     marginBottom: 16,
     fontSize: 16,
     color: '#333',
   },
-  // --- ปุ่ม Login ---
   loginButton: {
-    backgroundColor: '#635BFF', // สีม่วงสด
+    backgroundColor: '#635BFF', 
     paddingVertical: 14,
     borderRadius: 8,
     alignItems: 'center',
@@ -172,7 +184,6 @@ const styles = StyleSheet.create({
     fontSize: 16,
     fontWeight: 'bold',
   },
-  // --- ลิงก์อื่นๆ ---
   forgotText: {
     color: '#6B6B6B',
     fontSize: 13,
@@ -181,18 +192,18 @@ const styles = StyleSheet.create({
   signupContainer: {
     flexDirection: 'row',
     marginTop: 14,
-    paddingBottom: 30, // เพิ่มระยะห่างด้านล่างสุด
+    paddingBottom: 30, 
   },
   signupText: {
     color: '#6B6B6B',
     fontSize: 13,
   },
   signupLink: {
-    color: '#635BFF', // สีม่วงสด
+    color: '#635BFF', 
     fontSize: 13,
     fontWeight: 'bold',
     marginLeft: 4,
   },
 });
 
-export default LoginScreen;
+export default LoginScreen
